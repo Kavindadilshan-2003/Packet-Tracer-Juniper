@@ -1,0 +1,36 @@
+# Juniper Basic Configuration Template
+
+# System
+set system root-authentication plain-text-password
+set system host-name "juniper-basic"
+set system services ssh
+set system time-zone UTC
+set system log console any any
+set system login user admin class super-user authentication plain-text-password
+
+# Interfaces
+set interfaces ge-0/0/0 unit 0 family inet address 192.168.1.1/24
+set interfaces ge-0/0/1 unit 0 family inet address 192.168.2.1/24
+
+# Routing
+set routing-options static route 0.0.0.0/0 next-hop 192.168.1.254
+
+# Security Zones
+set security zones security-zone trust interfaces ge-0/0/0.0
+set security zones security-zone untrust interfaces ge-0/0/1.0
+
+# NAT
+set security nat source rule-set trust-to-untrust from zone trust
+set security nat source rule-set trust-to-untrust to zone untrust
+set security nat source rule-set trust-to-untrust rule source-nat-rule match source-address 192.168.1.0/24
+set security nat source rule-set trust-to-untrust rule source-nat-rule then source-nat interface
+
+# Policies
+set security policies from-zone trust to-zone untrust policy allow-http-https match source-address any
+set security policies from-zone trust to-zone untrust policy allow-http-https match destination-address any
+set security policies from-zone trust to-zone untrust policy allow-http-https match application junos-http
+set security policies from-zone trust to-zone untrust policy allow-http-https match application junos-https
+set security policies from-zone trust to-zone untrust policy allow-http-https then permit
+
+# Commit the configuration
+commit
