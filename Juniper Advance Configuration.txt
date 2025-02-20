@@ -1,0 +1,68 @@
+# Juniper Advanced Configuration Template
+
+# System
+set system root-authentication plain-text-password
+set system host-name "juniper-advanced"
+set system services ssh
+set system time-zone UTC
+set system log console any any
+set system login user admin class super-user authentication plain-text-password
+set system login user operator class operator authentication plain-text-password
+
+# Interfaces
+set interfaces ge-0/0/0 unit 0 family inet address 10.0.1.1/24
+set interfaces ge-0/0/1 unit 0 family inet address 10.0.2.1/24
+set interfaces ge-0/0/2 unit 0 family inet address 10.0.3.1/24
+set interfaces ae0 aggregated-ether-options link-speed 10g
+set interfaces ae0 unit 0 family inet address 172.16.1.1/24
+
+# VLANs
+set vlans vlan10 vlan-id 10
+set vlans vlan10 l3-interface irb.10
+set vlans vlan20 vlan-id 20
+set vlans vlan20 l3-interface irb.20
+
+# L3 Interfaces
+set interfaces irb unit 10 family inet address 192.168.10.1/24
+set interfaces irb unit 20 family inet address 192.168.20.1/24
+
+# Routing
+set routing-options static route 0.0.0.0/0 next-hop 10.0.1.254
+set routing-options static route 192.168.30.0/24 next-hop 10.0.2.254
+
+# OSPF
+set protocols ospf area 0.0.0.0 interface ge-0/0/0.0
+set protocols ospf area 0.0.0.0 interface ge-0/0/1.0
+set protocols ospf area 0.0.0.0 interface ae0.0
+
+# BGP
+set protocols bgp group external-peers type external
+set protocols bgp group external-peers peer-as 65001
+set protocols bgp group external-peers neighbor 203.0.113.1 peer-as 65001
+set protocols bgp group external-peers neighbor 203.0.113.2 peer-as 65001
+
+# Security Zones
+set security zones security-zone trust interfaces ge-0/0/0.0
+set security zones security-zone trust interfaces irb.10
+set security zones security-zone dmz interfaces ge-0/0/1.0
+set security zones security-zone dmz interfaces irb.20
+set security zones security-zone untrust interfaces ge-0/0/2.0
+
+# NAT
+set security nat source rule-set trust-to-untrust from zone trust
+set security nat source rule-set trust-to-untrust to zone untrust
+set security nat source rule-set trust-to-untrust rule source-nat-rule match source-address 192.168.10.0/24
+set security nat source rule-set trust-to-untrust rule source-nat-rule then source-nat interface
+
+# Policies
+set security policies from-zone trust to-zone untrust policy allow-all match source-address any
+set security policies from-zone trust to-zone untrust policy allow-all match destination-address any
+set security policies from-zone trust to-zone untrust policy allow-all match application any
+set security policies from-zone trust to-zone untrust policy allow-all then permit
+set security policies from-zone dmz to-zone untrust policy allow-web-servers match source-address any
+set security policies from-zone dmz to-zone untrust policy allow-web-servers match destination-address any
+set security policies from-zone dmz to-zone untrust policy allow-web-servers match application junos-http
+set security policies from-zone dmz to-zone untrust policy allow-web-servers then permit
+
+# Commit the configuration
+commit
